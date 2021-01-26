@@ -407,7 +407,9 @@ namespace Bicep.Core.Parsing
                     return this.Object();
 
                 case TokenType.LeftSquare when allowComplexLiterals:
-                    return this.Array();
+                    return CheckKeyword(this.reader.PeekAhead(), LanguageConstants.ForKeyword) 
+                        ? this.LoopExpression() 
+                        : this.Array();
 
                 case TokenType.LeftBrace:
                 case TokenType.LeftSquare:
@@ -774,6 +776,20 @@ namespace Bicep.Core.Parsing
             }
         }
 
+        private SyntaxBase LoopExpression()
+        {
+            var openBracket = Expect(TokenType.LeftSquare, b => b.ExpectedCharacter("["));
+            var forKeyword = ExpectKeyword(LanguageConstants.ForKeyword);
+            var identifier = Identifier(b => b.ExpectedLoopVariableIdentifier());
+            var inKeyword = ExpectKeyword(LanguageConstants.InKeyword);
+            var expression = this.Expression(allowComplexLiterals: true);
+            var colon = Expect(TokenType.Colon, b => b.ExpectedCharacter(":"));
+            var body = this.Expression(allowComplexLiterals: true);
+            var closeBracket = Expect(TokenType.RightSquare, b => b.ExpectedCharacter("]"));
+
+            return new ForSyntax(openBracket, forKeyword, identifier, inKeyword, expression, colon, body, closeBracket);
+        }
+
         private SyntaxBase Array()
         {
             var openBracket = Expect(TokenType.LeftSquare, b => b.ExpectedCharacter("["));
@@ -1021,9 +1037,13 @@ namespace Bicep.Core.Parsing
             throw new ExpectedTokenException(this.reader.Peek(), errorFunc);
         }
 
+        private static bool CheckKeyword(Token? token, string keyword) => token?.Type == TokenType.Identifier && token.Text == keyword;
+
+        private bool CheckKeyword(string keyword) => !this.IsAtEnd() && CheckKeyword(this.reader.Peek(), keyword);
+
         private Token ExpectKeyword(string expectedKeyword)
         {
-            if (this.Check(TokenType.Identifier) && reader.Peek().Text == expectedKeyword)
+            if (this.CheckKeyword(expectedKeyword))
             {
                 // only read the token if it matches the expectations
                 // otherwise, we could accidentally consume EOF

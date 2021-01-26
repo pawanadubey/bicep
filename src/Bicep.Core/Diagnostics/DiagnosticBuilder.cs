@@ -711,6 +711,11 @@ namespace Bicep.Core.Diagnostics
                 TextSpan,                
                 "BCP122",
                 $"Modules: {ToQuotedString(moduleNames)} are defined with this same name and this same scope in a file. Rename them or split into different modules.");
+
+            public ErrorDiagnostic ExpectedLoopVariableIdentifier() => new(
+                TextSpan,
+                "BCP123",
+                "Expected a loop variable identifier at this location.");
         }
 
         public static DiagnosticBuilderInternal ForPosition(TextSpan span)

@@ -76,6 +76,7 @@ primaryExpression ->
   literalValue |
   interpString |
   array |
+  loopExpression |
   object |
   parenthesizedExpression
 
@@ -86,6 +87,8 @@ argumentList -> expression ("," expression)*
 parenthesizedExpression -> "(" expression ")"
 
 ifCondition -> "if" parenthesizedExpression
+
+loopExpression -> "[" "for" IDENTIFIER "in" expression ":" expression(body) "]"
 
 interpString ->  interpStringLeftPiece ( expression interpStringMiddlePiece )* expression interpStringRightPiece | literalString
 interpStringLeftPiece -> "'" STRINGCHAR* "${"
