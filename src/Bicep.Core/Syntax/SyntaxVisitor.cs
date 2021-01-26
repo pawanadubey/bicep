@@ -189,6 +189,18 @@ namespace Bicep.Core.Syntax
             this.Visit(syntax.ConditionExpression);
         }
 
+        public virtual void VisitForSyntax(ForSyntax syntax)
+        {
+            this.Visit(syntax.OpenSquare);
+            this.Visit(syntax.ForKeyword);
+            this.Visit(syntax.Identifier);
+            this.Visit(syntax.InKeyword);
+            this.Visit(syntax.Expression);
+            this.Visit(syntax.Colon);
+            this.Visit(syntax.Body);
+            this.Visit(syntax.CloseSquare);
+        }
+
         public virtual void VisitTernaryOperationSyntax(TernaryOperationSyntax syntax)
         {
             this.Visit(syntax.ConditionExpression);
