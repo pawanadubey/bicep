@@ -41,21 +41,6 @@ namespace Bicep.Wasm.LanguageHelpers
             tokens.Add((positionable, tokenType));
         }
 
-        public override void VisitArrayAccessSyntax(ArrayAccessSyntax syntax)
-        {
-            base.VisitArrayAccessSyntax(syntax);
-        }
-
-        public override void VisitArrayItemSyntax(ArrayItemSyntax syntax)
-        {
-            base.VisitArrayItemSyntax(syntax);
-        }
-
-        public override void VisitArraySyntax(ArraySyntax syntax)
-        {
-            base.VisitArraySyntax(syntax);
-        }
-
         public override void VisitBinaryOperationSyntax(BinaryOperationSyntax syntax)
         {
             AddTokenType(syntax.OperatorToken, SemanticTokenType.Operator);
@@ -68,11 +53,6 @@ namespace Bicep.Wasm.LanguageHelpers
             base.VisitBooleanLiteralSyntax(syntax);
         }
 
-        public override void VisitFunctionArgumentSyntax(FunctionArgumentSyntax syntax)
-        {
-            base.VisitFunctionArgumentSyntax(syntax);
-        }
-
         public override void VisitFunctionCallSyntax(FunctionCallSyntax syntax)
         {
             AddTokenType(syntax.Name, SemanticTokenType.Function);
@@ -83,11 +63,6 @@ namespace Bicep.Wasm.LanguageHelpers
         {
             AddTokenType(syntax.Name, SemanticTokenType.Function);
             base.VisitInstanceFunctionCallSyntax(syntax);
-        }
-
-        public override void VisitIdentifierSyntax(IdentifierSyntax syntax)
-        {
-            base.VisitIdentifierSyntax(syntax);
         }
 
         public override void VisitNullLiteralSyntax(NullLiteralSyntax syntax)
@@ -115,11 +90,6 @@ namespace Bicep.Wasm.LanguageHelpers
             base.VisitObjectPropertySyntax(syntax);
         }
 
-        public override void VisitObjectSyntax(ObjectSyntax syntax)
-        {
-            base.VisitObjectSyntax(syntax);
-        }
-
         public override void VisitOutputDeclarationSyntax(OutputDeclarationSyntax syntax)
         {
             AddTokenType(syntax.Keyword, SemanticTokenType.Keyword);
@@ -132,21 +102,6 @@ namespace Bicep.Wasm.LanguageHelpers
             AddTokenType(syntax.Keyword, SemanticTokenType.Keyword);
             AddTokenType(syntax.Name, SemanticTokenType.Variable);
             base.VisitParameterDeclarationSyntax(syntax);
-        }
-
-        public override void VisitParameterDefaultValueSyntax(ParameterDefaultValueSyntax syntax)
-        {
-            base.VisitParameterDefaultValueSyntax(syntax);
-        }
-
-        public override void VisitParenthesizedExpressionSyntax(ParenthesizedExpressionSyntax syntax)
-        {
-            base.VisitParenthesizedExpressionSyntax(syntax);
-        }
-
-        public override void VisitProgramSyntax(ProgramSyntax syntax)
-        {
-            base.VisitProgramSyntax(syntax);
         }
 
         public override void VisitPropertyAccessSyntax(PropertyAccessSyntax syntax)
@@ -175,9 +130,12 @@ namespace Bicep.Wasm.LanguageHelpers
             base.VisitIfConditionSyntax(syntax);
         }
 
-        public override void VisitSkippedTriviaSyntax(SkippedTriviaSyntax syntax)
+        public override void VisitForSyntax(ForSyntax syntax)
         {
-            base.VisitSkippedTriviaSyntax(syntax);
+            AddTokenType(syntax.ForKeyword, SemanticTokenType.Keyword);
+            AddTokenType(syntax.Identifier, SemanticTokenType.Variable);
+            AddTokenType(syntax.InKeyword, SemanticTokenType.Keyword);
+            base.VisitForSyntax(syntax);
         }
 
         private void AddStringToken(Token token)
@@ -213,11 +171,6 @@ namespace Bicep.Wasm.LanguageHelpers
             {
                 AddTokenType(token.GetSpanSlice(token.Span.Length - endOperatorLength, endOperatorLength), SemanticTokenType.Operator);
             }
-        }
-
-        public override void VisitStringSyntax(StringSyntax syntax)
-        {
-            base.VisitStringSyntax(syntax);
         }
 
         public override void VisitTernaryOperationSyntax(TernaryOperationSyntax syntax)

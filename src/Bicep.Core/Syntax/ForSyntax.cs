@@ -49,10 +49,7 @@ namespace Bicep.Core.Syntax
 
         public Token CloseSquare { get; }
 
-        public override void Accept(ISyntaxVisitor visitor)
-        {
-            throw new System.NotImplementedException();
-        }
+        public override void Accept(ISyntaxVisitor visitor) => visitor.VisitForSyntax(this);
 
         public override TextSpan Span => TextSpan.Between(this.OpenSquare, this.CloseSquare);
     }
