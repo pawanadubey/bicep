@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
@@ -65,8 +64,11 @@ namespace Bicep.Core.TypeSystem
                 case VariableAccessSyntax variableAccess:
                     return GetVariableAccessType(variableAccess);
 
-                case TargetScopeSyntax targetScopeSyntax:
-                    return new DeclaredTypeAssignment(targetScopeSyntax.GetDeclaredType(), targetScopeSyntax, DeclaredTypeFlags.Constant);
+                case TargetScopeSyntax targetScope:
+                    return new DeclaredTypeAssignment(targetScope.GetDeclaredType(), targetScope, DeclaredTypeFlags.Constant);
+
+                case IfConditionSyntax ifCondition:
+                    return GetIfConditionType(ifCondition);
 
                 case PropertyAccessSyntax propertyAccess:
                     return GetPropertyAccessType(propertyAccess);
@@ -133,11 +135,11 @@ namespace Bicep.Core.TypeSystem
             {
                 case ResourceSymbol resourceSymbol when IsCycleFree(resourceSymbol):
                     // the declared type of the body is more useful to us than the declared type of the resource itself
-                    return this.GetDeclaredTypeAssignment(resourceSymbol.DeclaringResource.Body);
+                    return this.GetDeclaredTypeAssignment(resourceSymbol.DeclaringResource.Value);
 
                 case ModuleSymbol moduleSymbol when IsCycleFree(moduleSymbol):
                     // the declared type of the body is more useful to us than the declared type of the module itself
-                    return this.GetDeclaredTypeAssignment(moduleSymbol.DeclaringModule.Body);
+                    return this.GetDeclaredTypeAssignment(moduleSymbol.DeclaringModule.Value);
 
                 case DeclaredSymbol declaredSymbol when IsCycleFree(declaredSymbol):
                     // the syntax node is referencing a declared symbol
@@ -250,6 +252,18 @@ namespace Bicep.Core.TypeSystem
             return null;
         }
 
+        private DeclaredTypeAssignment? GetIfConditionType(IfConditionSyntax syntax)
+        {
+            var parent = this.binder.GetParent(syntax);
+            if (parent == null)
+            {
+                return null;
+            }
+
+            // the if condition node declared type is the same as the parent resource or module declared type
+            return GetDeclaredTypeAssignment(parent);
+        }
+
         private DeclaredTypeAssignment? GetObjectType(ObjectSyntax syntax)
         {
             // local function
@@ -281,6 +295,16 @@ namespace Bicep.Core.TypeSystem
 
                 case ModuleDeclarationSyntax _ when parentType is ModuleType moduleType:
                     // the object literal's parent is a module declaration, which makes this the body of the module
+                    // the declared type will be the same as the parent
+                    return CreateAssignment(ResolveDiscriminatedObjects(moduleType.Body.Type, syntax));
+
+                case IfConditionSyntax _ when parentType is ResourceType resourceType:
+                    // the object literal's parent is an if-condition
+                    // the declared type will be the same as the parent
+                    return CreateAssignment(ResolveDiscriminatedObjects(resourceType.Body.Type, syntax));
+
+                case IfConditionSyntax _ when parentType is ModuleType moduleType:
+                    // the object literal's parent is an if-condition
                     // the declared type will be the same as the parent
                     return CreateAssignment(ResolveDiscriminatedObjects(moduleType.Body.Type, syntax));
 

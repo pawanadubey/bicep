@@ -50,27 +50,11 @@ namespace Bicep.Core.Semantics
             this.bindings.Add(syntax, symbol);
         }
 
-        public override void VisitResourceDeclarationSyntax(ResourceDeclarationSyntax syntax)
+        public override void VisitIfConditionSyntax(IfConditionSyntax syntax)
         {
             this.Visit(syntax.Keyword);
-            this.Visit(syntax.Name);
-            this.Visit(syntax.Type);
-            this.Visit(syntax.Assignment);
             allowedFlags = FunctionFlags.Default;
-            this.Visit(syntax.IfCondition);
-            allowedFlags = FunctionFlags.RequiresInlining;
-            this.Visit(syntax.Body);
-            allowedFlags = FunctionFlags.Default;
-        }
-
-        public override void VisitModuleDeclarationSyntax(ModuleDeclarationSyntax syntax)
-        {
-            this.Visit(syntax.Keyword);
-            this.Visit(syntax.Name);
-            this.Visit(syntax.Path);
-            this.Visit(syntax.Assignment);
-            allowedFlags = FunctionFlags.Default;
-            this.Visit(syntax.IfCondition);
+            this.Visit(syntax.ConditionExpression);
             allowedFlags = FunctionFlags.RequiresInlining;
             this.Visit(syntax.Body);
             allowedFlags = FunctionFlags.Default;
