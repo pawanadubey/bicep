@@ -76,6 +76,7 @@ namespace Bicep.Core.Syntax
             {
                 ObjectSyntax @object => @object,
                 IfConditionSyntax ifCondition => ifCondition.Body as ObjectSyntax,
+                SkippedTriviaSyntax => null,
 
                 // blocked by assert in the constructor
                 _ => throw new NotImplementedException($"Unexpected type of resource value '{this.Value.GetType().Name}'.")
