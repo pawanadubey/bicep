@@ -22,7 +22,7 @@ namespace Bicep.Core.Decompiler.Rewriters
 
         protected override ResourceDeclarationSyntax ReplaceResourceDeclarationSyntax(ResourceDeclarationSyntax syntax)
         {
-            if (syntax.Body is not ObjectSyntax resourceBody ||
+            if (syntax.Value is not ObjectSyntax resourceBody ||
                 resourceBody.SafeGetPropertyByName("name") is not ObjectPropertySyntax resourceNameProp ||
                 resourceNameProp.Value is not StringSyntax resourceName)
             {
@@ -51,7 +51,7 @@ namespace Bicep.Core.Decompiler.Rewriters
                 }
 
                 // The other resource is a parent type to this one. check if we can refactor the name.
-                if (otherResourceSymbol.DeclaringResource.Body is not ObjectSyntax otherResourceBody ||
+                if (otherResourceSymbol.DeclaringResource.Value is not ObjectSyntax otherResourceBody ||
                     otherResourceBody.SafeGetPropertyByName("name") is not ObjectPropertySyntax otherResourceNameProp)
                 {
                     continue;

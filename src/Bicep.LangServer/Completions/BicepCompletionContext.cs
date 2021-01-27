@@ -389,7 +389,7 @@ namespace Bicep.LanguageServer.Completions
                     return !resource.Name.Span.ContainsInclusive(offset) &&
                            !resource.Type.Span.ContainsInclusive(offset) &&
                            !resource.Assignment.Span.ContainsInclusive(offset) &&
-                           resource.Body is SkippedTriviaSyntax && offset == resource.Body.Span.Position;
+                           resource.Value is SkippedTriviaSyntax && offset == resource.Value.Span.Position;
 
                 case Token token when token.Type == TokenType.Assignment && matchingNodes.Count >= 2 && offset == token.GetEndPosition():
                     // cursor is after the = token
@@ -410,7 +410,7 @@ namespace Bicep.LanguageServer.Completions
                     return !module.Name.Span.ContainsInclusive(offset) &&
                            !module.Path.Span.ContainsInclusive(offset) &&
                            !module.Assignment.Span.ContainsInclusive(offset) &&
-                           module.Body is SkippedTriviaSyntax && offset == module.Body.Span.Position;
+                           module.Value is SkippedTriviaSyntax && offset == module.Value.Span.Position;
 
                 case Token token when token.Type == TokenType.Assignment && matchingNodes.Count >= 2 && offset == token.GetEndPosition():
                     // cursor is after the = token

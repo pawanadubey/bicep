@@ -639,13 +639,13 @@ namespace Bicep.Decompiler
             return SyntaxHelpers.CreateStringLiteral(filePath);
         }
 
-        private SyntaxBase? ProcessCondition(JObject resource)
+        private SyntaxBase ProcessCondition(JObject resource, ObjectSyntax body)
         {
             JProperty? conditionProperty = TemplateHelpers.GetProperty(resource, "condition");
 
             if (conditionProperty == null)
             {
-                return null;
+                return body;
             }
 
             SyntaxBase conditionExpression = ParseJToken(conditionProperty.Value);
@@ -660,7 +660,8 @@ namespace Bicep.Decompiler
 
             return new IfConditionSyntax(
                 SyntaxHelpers.CreateToken(TokenType.Identifier, "if"),
-                conditionExpression);
+                conditionExpression,
+                body);
         }
 
         private SyntaxBase? ProcessDependsOn(JObject resource)
@@ -777,31 +778,8 @@ namespace Bicep.Decompiler
                 }
             }
 
-            var ifCondition = ProcessCondition(resource);
-
-            var parameters = (resource["properties"]?["parameters"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>();
-            var paramProperties = new List<ObjectPropertySyntax>();
-            foreach (var param in parameters)
-            {
-                paramProperties.Add(SyntaxHelpers.CreateObjectProperty(param.Name, ParseJToken(param.Value["value"])));
-            }
-
-            var properties = new List<ObjectPropertySyntax>();
-            properties.Add(SyntaxHelpers.CreateObjectProperty("name", ParseJToken(nameString)));
-
-            var scope = TryModuleGetScopeProperty(resource);
-            if (scope is not null)
-            {
-                properties.Add(SyntaxHelpers.CreateObjectProperty("scope", scope));
-            }
-
-            properties.Add(SyntaxHelpers.CreateObjectProperty("params", SyntaxHelpers.CreateObject(paramProperties)));
-
-            var dependsOn = ProcessDependsOn(resource);
-            if (dependsOn != null)
-            {
-                properties.Add(SyntaxHelpers.CreateObjectProperty("dependsOn", dependsOn));
-            }
+            var body = ProcessModuleBody(resource, nameString);
+            var value = ProcessCondition(resource, body);
 
             var identifier = nameResolver.TryLookupResourceName(typeString, ExpressionHelpers.ParseExpression(nameString)) ?? throw new ArgumentException($"Unable to find resource {typeString} {nameString}");
             
@@ -835,8 +813,7 @@ namespace Bicep.Decompiler
                     SyntaxHelpers.CreateIdentifier(identifier),
                     SyntaxHelpers.CreateStringLiteral(filePath),
                     SyntaxHelpers.CreateToken(TokenType.Assignment, "="),
-                    ifCondition,
-                    SyntaxHelpers.CreateObject(properties));
+                    value);
             }
 
             var templateLink = TemplateHelpers.GetNestedProperty(resource, "properties", "templateLink", "uri");
@@ -850,8 +827,36 @@ namespace Bicep.Decompiler
                 SyntaxHelpers.CreateIdentifier(identifier),
                 GetModuleFilePath(resource, templateLinkString),
                 SyntaxHelpers.CreateToken(TokenType.Assignment, "="),
-                ifCondition,
-                SyntaxHelpers.CreateObject(properties));
+                value);
+        }
+
+        private ObjectSyntax ProcessModuleBody(JObject resource, string nameString)
+        {
+            var parameters = (resource["properties"]?["parameters"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>();
+            var paramProperties = new List<ObjectPropertySyntax>();
+            foreach (var param in parameters)
+            {
+                paramProperties.Add(SyntaxHelpers.CreateObjectProperty(param.Name, ParseJToken(param.Value["value"])));
+            }
+
+            var properties = new List<ObjectPropertySyntax>();
+            properties.Add(SyntaxHelpers.CreateObjectProperty("name", ParseJToken(nameString)));
+
+            var scope = TryModuleGetScopeProperty(resource);
+            if (scope is not null)
+            {
+                properties.Add(SyntaxHelpers.CreateObjectProperty("scope", scope));
+            }
+
+            properties.Add(SyntaxHelpers.CreateObjectProperty("params", SyntaxHelpers.CreateObject(paramProperties)));
+
+            var dependsOn = ProcessDependsOn(resource);
+            if (dependsOn != null)
+            {
+                properties.Add(SyntaxHelpers.CreateObjectProperty("dependsOn", dependsOn));
+            }
+
+            return SyntaxHelpers.CreateObject(properties);
         }
 
         private SyntaxBase? TryGetResourceScopeProperty(JObject resource)
@@ -877,7 +882,7 @@ namespace Bicep.Decompiler
 
         public SyntaxBase ParseResource(JToken value)
         {
-            var resource = (value as JObject) ?? throw new ConversionFailedException($"Incorrect resource format", value);
+            var resource = (value as JObject) ?? throw new ConversionFailedException("Incorrect resource format", value);
 
             // mandatory properties
             var (typeString, nameString, apiVersionString) = TemplateHelpers.ParseResource(resource);
@@ -887,7 +892,22 @@ namespace Bicep.Decompiler
                 return ParseModule(resource, typeString, nameString);
             }
             
-            var expectedResourceProps = new HashSet<string>(new [] {
+            var body = ProcessResourceBody(resource);
+
+            var identifier = nameResolver.TryLookupResourceName(typeString, ExpressionHelpers.ParseExpression(nameString)) ?? throw new ArgumentException($"Unable to find resource {typeString} {nameString}");
+
+            return new ResourceDeclarationSyntax(
+                SyntaxHelpers.CreateToken(TokenType.Identifier, "resource"),
+                SyntaxHelpers.CreateIdentifier(identifier),
+                ParseString($"{typeString}@{apiVersionString}"),
+                SyntaxHelpers.CreateToken(TokenType.Assignment, "="),
+                ProcessCondition(resource, body));
+        }
+
+        private ObjectSyntax ProcessResourceBody(JObject resource)
+        {
+            var expectedResourceProps = new HashSet<string>(new[]
+            {
                 "condition",
                 "name",
                 "type",
@@ -910,7 +930,8 @@ namespace Bicep.Decompiler
                 "scope",
             }, StringComparer.OrdinalIgnoreCase);
 
-            var resourcePropsToOmit = new HashSet<string>(new [] {
+            var resourcePropsToOmit = new HashSet<string>(new[]
+            {
                 "condition",
                 "type",
                 "apiVersion",
@@ -955,15 +976,7 @@ namespace Bicep.Decompiler
                 topLevelProperties.Add(SyntaxHelpers.CreateObjectProperty("dependsOn", dependsOn));
             }
 
-            var identifier = nameResolver.TryLookupResourceName(typeString, ExpressionHelpers.ParseExpression(nameString)) ?? throw new ArgumentException($"Unable to find resource {typeString} {nameString}");
-            
-            return new ResourceDeclarationSyntax(
-                SyntaxHelpers.CreateToken(TokenType.Identifier, "resource"),
-                SyntaxHelpers.CreateIdentifier(identifier),
-                ParseString($"{typeString}@{apiVersionString}"),
-                SyntaxHelpers.CreateToken(TokenType.Assignment, "="),
-                ProcessCondition(resource),
-                SyntaxHelpers.CreateObject(topLevelProperties));
+            return SyntaxHelpers.CreateObject(topLevelProperties);
         }
 
         public OutputDeclarationSyntax ParseOutput(JProperty value)
